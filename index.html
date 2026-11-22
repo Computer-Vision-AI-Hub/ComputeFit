@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComputeFit — hardware advisor for vision, image generation, LLM, VLM and robot (VLA) models</title>
+<meta name="description" content="See which AI models your hardware can run, how fast, and what to buy if it can't.">
+<meta name="theme-color" content="#042C53">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css?v=20261121">
+</head>
+<body>
+<div class="masthead">
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top">
+        <svg class="brand-mark" viewBox="0 0 160 160" aria-hidden="true"><rect width="160" height="160" rx="36" fill="#185FA5"/><path d="M32 52V38q0-6 6-6h14M108 32h14q6 0 6 6v14M128 108v14q0 6-6 6h-14M52 128H38q-6 0-6-6v-14" fill="none" stroke="#E6F1FB" stroke-width="8" stroke-linecap="round"/><rect x="50" y="86" width="12" height="22" rx="3" fill="#9FE1CB"/><rect x="74" y="70" width="12" height="38" rx="3" fill="#5DCAA5"/><rect x="98" y="54" width="12" height="54" rx="3" fill="#E6F1FB"/></svg>
+        <span class="brand-name">Compute<span class="accent">Fit</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#models">Models</a>
+        <a href="#stack">Stack planner</a>
+        <a href="#metrics">Metrics explained</a>
+        <button type="button" id="nav-add">Add a model</button>
+        <button type="button" id="nav-add-dev">Add a device</button>
+      </nav>
+      <a class="ghost-btn" href="https://computer-vision-ai-hub.github.io/ComputerVisionAIHubLibrary.github.io/">Model catalog ↗</a>
+    </div>
+  </header>
+  <section class="hero" id="top">
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Hardware advisor · vision · image generation · LLM · VLM · VLA</p>
+        <h1>See which models your hardware can run before you buy anything.</h1>
+        <p class="hero-sub">Pick your device once. Every model shows whether it fits and how fast it runs. Open one to set your own targets, find the bottleneck and get upgrade options.</p>
+        <div class="hero-cta">
+          <a class="btn try-btn lg" href="#models">Browse models</a>
+          <a class="btn on-dark lg" href="#metrics">How it's calculated</a>
+        </div>
+        <dl class="hero-stats">
+          <div><dt>Models</dt><dd data-stat="models">–</dd></div>
+          <div><dt>Devices</dt><dd data-stat="devices">–</dd></div>
+          <div><dt>Fit your device</dt><dd data-stat="fits">–</dd></div>
+        </dl>
+      </div>
+      <figure class="hero-shot" aria-hidden="true">
+        <span class="bracket tl"></span><span class="bracket tr"></span><span class="bracket bl"></span><span class="bracket br"></span>
+        <div class="shot" id="hero-shot"></div>
+        <figcaption class="det-label" id="hero-label"></figcaption>
+      </figure>
+    </div>
+  </section>
+</div>
+
+<section class="toolbar-band" aria-label="Filter models">
+  <div class="wrap toolbar">
+    <label class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Search models, tasks or families" autocomplete="off" aria-label="Search models">
+      <kbd aria-hidden="true">/</kbd>
+    </label>
+    <div id="type-filters" class="filters" role="group" aria-label="Filter by model type"></div>
+    <div class="selects">
+      <label class="select hw grow"><span>My hardware</span>
+        <select id="hw" aria-label="Your hardware"></select>
+      </label>
+      <label class="select">
+        <select id="sort" aria-label="Sort models">
+          <option value="default">Sort: catalog order</option>
+          <option value="fit">Sort: best fit first</option>
+          <option value="light">Sort: lightest first</option>
+          <option value="name">Sort: name A–Z</option>
+        </select>
+      </label>
+    </div>
+  </div>
+</section>
+
+<main id="models" class="wrap">
+  <div class="list-head">
+    <p id="count" class="count" aria-live="polite"></p>
+    <details class="notice">
+      <summary><strong>Heads up:</strong> results are estimates (±20–30%) against default targets — open a model to set your own.</summary>
+      <p id="targets-note"></p>
+    </details>
+  </div>
+  <div id="grid" class="grid" aria-live="polite"></div>
+  <div id="state" class="state" hidden></div>
+</main>
+
+<section id="stack" class="stack-band" aria-label="Stack planner">
+  <div class="wrap">
+    <p class="eyebrow-s">Stack planner</p>
+    <h2>Run several models on one device</h2>
+    <p class="section-sub">Real systems combine models: a detector, a tracker, a depth model, a VLM. Add them all and see whether one device carries the whole stack, how busy it is, and what to buy if it doesn't.</p>
+    <div class="stk-grid">
+      <div class="stk-left">
+        <p class="block-label">Start from an example</p>
+        <div class="side-chips" id="stk-presets"></div>
+        <p class="block-label" style="margin-top:14px">Models in your stack</p>
+        <div id="stk-rows"></div>
+        <div class="stk-add"><select id="stk-add-sel" aria-label="Add a model to the stack"></select><button type="button" class="btn secondary" id="stk-add">Add</button></div>
+        <div class="fld-grid" style="margin-top:14px">
+          <label class="fld wide">Device<select id="stk-hw"></select></label>
+          <label class="fld wide">How many<select id="stk-n"></select></label>
+        </div>
+        <p class="modal-note">Targets come from each model's defaults. Change the numbers above per model; open a model to adjust everything else.</p>
+      </div>
+      <div class="stk-right" id="stk-out" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="metrics" class="local-band" aria-label="How it works and metrics explained">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="section-sub">Three steps, no sign-up. Everything is calculated in your browser.</p>
+    <ol class="steps">
+      <li><span class="step-n">1</span><h3>Pick your hardware</h3><p class="step-note">Choose your device in the bar above the models — or “I don't have hardware yet” to see the cheapest device for each model.</p></li>
+      <li><span class="step-n">2</span><h3>Scan the cards</h3><p class="step-note">Every card shows whether the model fits, how fast it runs, and how much of the device it uses. Filter to “Fits my hardware”.</p></li>
+      <li><span class="step-n">3</span><h3>Check fit</h3><p class="step-note">Open a model to set your own cameras, users and latency targets, see the bottleneck, a free fix, upgrade options and the deploy command.</p></li>
+    </ol>
+    <h3 class="guide-title" style="margin-top:0">Metrics explained</h3>
+    <p class="section-sub" style="margin-bottom:16px">Every number ComputeFit shows: what it means, how it is calculated, and what a good value looks like. The <code>?</code> next to a result opens its entry here.</p>
+<details class="guide" id="g-general" open><summary>Verdict &amp; options</summary><div class="guide-body">
+    <p>These apply to every model type.</p>
+    <div class="mgrid">
+      <div class="mdef" id="m-verdict"><h4>Verdict</h4>
+        <p><b>Meets your targets</b>: every check passes with at least 15% to spare. <b>Meets targets, no margin</b>: everything passes, but at least one check is within 15% of its limit, so a small change in the real pipeline can tip it over. <b>Does not meet targets</b>: at least one check fails.</p>
+        <p class="good">Aim for "meets your targets". "No margin" is fine for a demo, risky for production.</p></div>
+      <div class="mdef" id="m-headroom"><h4>Headroom <span class="unit">×</span></h4>
+        <p>How much spare capacity a setup has: the tightest of all its checks.</p>
+        <span class="formula">headroom = min( capacity ÷ demand, limit ÷ delay, 0.9 × free memory ÷ memory needed )</span>
+        <p>1.0× means exactly at the limit; 2.0× means it could handle twice the load.</p>
+        <p class="good">≥ 1.5× is the bar for "Recommended": room for more cameras/users and traffic peaks.</p></div>
+      <div class="mdef" id="m-bottleneck"><h4>Bottleneck — "what's holding it back"</h4>
+        <p>The single resource that limits the result. One of: <b>memory</b> (the model doesn't fit), <b>compute</b> (not enough TFLOPS — typical for vision and image generation), <b>memory bandwidth</b> (typical for LLM text generation), or <b>CPU pre/post-processing</b> (resizing frames and decoding results on a slow CPU).</p>
+        <p class="good">Fix the bottleneck first — upgrading anything else won't help.</p></div>
+      <div class="mdef" id="m-fix"><h4>Free fix</h4>
+        <p>ComputeFit tries cheaper settings on your current hardware, in order of least quality impact (optimized runtime → lower precision → smaller input or fewer image tokens → smaller model), and shows the first one that passes every target, with its trade-off.</p></div>
+      <div class="mdef" id="m-tiers"><h4>Budget · Recommended · Performance</h4>
+        <p><b>Budget</b>: cheapest setup that passes every target. <b>Recommended</b>: cheapest setup with ≥ 1.5× headroom (if the cheapest already has that, it's labeled "Recommended · best value"). <b>Performance</b>: most headroom within ~2–4× the price of the recommended option.</p>
+        <p>If you already own an edge device, options stay on edge devices. Budget, power limit and "edge only" filters apply to all three.</p></div>
+    </div>
+  </div></details>
+
+  <details class="guide" id="g-vision"><summary>Computer vision</summary><div class="guide-body">
+    <p>Detection, segmentation, oriented boxes (OBB), pose, classification, promptable segmentation (SAM) and depth.</p>
+    <div class="mgrid">
+      <div class="mdef" id="m-delay"><h4>Delay per frame <span class="unit">ms</span></h4>
+        <p>Time from a camera frame arriving to its detections being ready.</p>
+        <span class="formula">delay = runtime overhead + model compute + pre/post-processing
+model compute = (GFLOPs × batch + fixed work) ÷ effective TFLOPS</span>
+        <p>Video decoding and network transport are not included.</p>
+        <p class="good">Real-time control (robots, drones): ≤ 40 ms. Inspection lines: ≤ 20 ms. Monitoring / CCTV: 100–300 ms is fine.</p></div>
+      <div class="mdef" id="m-fps"><h4>Frames per second (FPS)</h4>
+        <p>Maximum frames the setup can process per second across all cameras, compared with what you need: <code>cameras × FPS each</code>.</p>
+        <span class="formula">FPS = devices × min( batch × 1000 ÷ inference ms, CPU pre/post capacity )</span>
+        <p><b>Cameras @ N FPS</b> in the options is simply <code>FPS ÷ N</code>, rounded down.</p></div>
+      <div class="mdef" id="m-memory"><h4>Memory <span class="unit">GB</span></h4>
+        <p>Memory the model needs versus what the device can actually use.</p>
+        <span class="formula">vision: weights + activations (∝ GFLOPs × batch) + runtime context
+image gen: image model + text encoder + VAE + activations + runtime
+LLM: weights + KV cache + runtime
+VLM: language model + vision encoder + KV cache + runtime</span>
+        <p>Usable memory: 92% of a GPU, 65% of a Jetson (shared with the OS), 70% of Apple unified memory, 60% of system RAM.</p></div>
+      <div class="mdef" id="m-gflops"><h4>GFLOPs</h4>
+        <p>Billions of math operations for one image — the model's "size of work". Published by model authors at a reference input size (640 px for YOLO detection, 1024 px for OBB and SAM, 224 px for classification).</p>
+        <span class="formula">GFLOPs at your size = published GFLOPs × (your size ÷ reference size)²</span></div>
+      <div class="mdef" id="m-imgsz"><h4>Input size <span class="unit">px</span></h4>
+        <p>The square resolution frames are resized to before the model. Halving it cuts compute ~4×, but small or distant objects get harder to detect.</p>
+        <p class="good">Use the size the model was trained at (your catalog models: 640) unless speed forces a change — then retrain at the new size.</p></div>
+      <div class="mdef" id="m-precision"><h4>Precision — FP32 · FP16 · INT8</h4>
+        <p>Number format for weights and math. <b>FP16</b> is ~2× faster than FP32 on GPUs and Jetson with no practical accuracy loss. <b>INT8</b> is another ~1.7× faster but needs calibration images and usually costs 0.5–2 mAP. Hailo accelerators run INT8 only.</p>
+        <p class="good">Default to FP16; use INT8 when you need the speed and have validated mAP.</p></div>
+      <div class="mdef" id="m-runtime"><h4>Runtime</h4>
+        <p>The software that executes the model. "Best for the device" means TensorRT (NVIDIA GPUs and Jetson), OpenVINO (Intel), NCNN (Raspberry Pi CPU), HailoRT (Hailo), Core ML (Apple). ONNX Runtime is assumed ~30% slower; plain PyTorch ~2× slower plus Python overhead.</p></div>
+      <div class="mdef" id="m-batch"><h4>Batch</h4>
+        <p>Frames from several cameras processed together. Raises total FPS because the accelerator is used more efficiently, but adds a little delay. Assumed up to 8 on GPUs, 4 on Jetson, 1 on CPUs and Hailo.</p></div>
+      <div class="mdef" id="m-prepost"><h4>Pre/post-processing</h4>
+        <p>Work around the model on the CPU: resizing and normalizing the frame, then decoding boxes and running NMS (non-maximum suppression, which removes duplicate boxes). YOLO26 and RT-DETR are NMS-free, so this step is ~40% lighter; segmentation masks make it ~40% heavier.</p></div>
+    </div>
+  </div></details>
+
+  <details class="guide" id="g-gen"><summary>Image generation</summary><div class="guide-body">
+    <p>Diffusion models (Stable Diffusion, SDXL, SD 3.5, FLUX) build an image over many denoising steps, so they are compute-bound and measured in seconds.</p>
+    <div class="mgrid">
+      <div class="mdef" id="m-imgtime"><h4>Time per image <span class="unit">s</span></h4>
+        <p>Seconds until a finished image, <b>including waiting in the queue</b> at your peak rate. "When idle" is the time with no other requests.</p>
+        <span class="formula">idle time = steps × time per step + VAE decode + text encoding
+time at peak = idle × (1 + ρ ÷ (2 × (1 − ρ)))   ρ = demand ÷ capacity</span>
+        <p class="good">Interactive tools: ≤ 5–10 s. Batch jobs: anything that meets images/hour.</p></div>
+      <div class="mdef" id="m-imghour"><h4>Images per hour</h4>
+        <p>Maximum sustained output. Each GPU runs its own model copy, so more GPUs add throughput, not single-image speed.</p>
+        <span class="formula">images/hour = GPUs × 3600 ÷ idle time × images per request</span>
+        <p class="good">Keep demand below ~70% of capacity, or waiting time grows quickly.</p></div>
+      <div class="mdef" id="m-steps"><h4>Steps · steps/s</h4>
+        <p>Number of denoising passes (25–30 typical, 4 for distilled "Lightning / Turbo / schnell" models). Steps/s is how many passes the GPU does per second at your resolution.</p>
+        <span class="formula">time per step = GFLOPs per step × (pixels ÷ native pixels)^1.2 ÷ effective TFLOPS</span></div>
+      <div class="mdef" id="m-te"><h4>Text encoder · offloading</h4>
+        <p>The model that turns your prompt into numbers (CLIP, or the large T5-XXL in SD 3.5 and FLUX at ~9.5 GB in FP16). It runs once per prompt, so moving it off the GPU after encoding saves a lot of memory for ~1–3 s extra.</p></div>
+      <div class="mdef" id="m-genprec"><h4>FP16 · FP8 · NF4</h4>
+        <p><b>FP8</b> halves memory and is ~1.4× faster on GPUs with FP8 tensor cores (RTX 40/50, L4, L40S, H100+); elsewhere it only saves memory. <b>NF4 / GGUF Q4</b> cuts memory ~3.5× for a slight loss of fine detail and is ~15% slower.</p></div>
+    </div>
+  </div></details>
+
+  <details class="guide" id="g-llm"><summary>LLM</summary><div class="guide-body">
+    <p>Text models generate one token (≈ ¾ of a word) at a time.</p>
+    <div class="mgrid">
+      <div class="mdef" id="m-tps"><h4>Speed per user <span class="unit">tokens/s</span></h4>
+        <p>How fast the answer appears for each user. Each token reads all active weights from memory, so speed is usually limited by memory bandwidth.</p>
+        <span class="formula">time per token = max( bytes read ÷ effective bandwidth, FLOPs ÷ effective compute ) + overhead</span>
+        <p class="good">Reading speed is 5–8 tokens/s; chat feels fast at 20+; coding agents want 50+.</p></div>
+      <div class="mdef" id="m-ttft"><h4>Time to first word <span class="unit">ms</span></h4>
+        <p>Delay before the answer starts: the model must read the whole prompt first. This is compute-bound; with several users it assumes a quarter of them send a prompt at the same moment.</p>
+        <span class="formula">≈ 2 × active parameters × prompt tokens ÷ (TFLOPS × 45%)</span></div>
+      <div class="mdef" id="m-kv"><h4>KV cache · context</h4>
+        <p>Memory that stores the conversation so far, for every user. It grows with context length × users and often matters as much as the weights.</p>
+        <span class="formula">KV bytes = 2 × layers × KV heads × head dim × context × users × bytes per value</span></div>
+    </div>
+  </div></details>
+
+  <details class="guide" id="g-vlm"><summary>VLM (vision-language models)</summary><div class="guide-body">
+    <p>A VLM turns each image into tokens, reads them like a long prompt, then writes an answer. Use it for open questions, reading text and describing scenes; for a fixed list of objects a detector is far cheaper.</p>
+    <div class="mgrid">
+      <div class="mdef" id="m-vlmtime"><h4>Time per answer <span class="unit">s</span></h4>
+        <p>Seconds from sending the image and question to the complete answer.</p>
+        <span class="formula">time = vision encoder + reading image and text tokens + answer tokens ÷ tokens per second</span>
+        <p>Reading the image is compute-bound; writing the answer is limited by memory bandwidth.</p>
+        <p class="good">Interactive use: ≤ 3–5 s. Camera event checks: ≤ 2 s. Documents and batch jobs: 10–30 s is fine.</p></div>
+      <div class="mdef" id="m-vlmrate"><h4>Answers per minute</h4>
+        <p>Maximum sustained requests. On GPUs several requests run in parallel (up to 32) while memory allows; other devices up to 4.</p>
+        <span class="formula">answers/min = parallel requests × 60 ÷ time per answer</span></div>
+      <div class="mdef" id="m-imgtok"><h4>Image tokens</h4>
+        <p>How many tokens one image becomes. Some models use a fixed count (Gemma 3: 256, Moondream: 729); others scale with resolution.</p>
+        <span class="formula">tokens = (resolution ÷ pixels per token)²   e.g. Qwen2.5-VL: 28 px per token → 768 px ≈ 750 tokens</span>
+        <p class="good">Halving the resolution cuts image cost about 4×. Crop to the region of interest first.</p></div>
+    </div>
+  </div></details>
+
+  <details class="guide" id="g-acc"><summary>Accuracy trade-offs</summary><div class="guide-body">
+    <p>Lower precision makes a model smaller and faster, but can cost accuracy. Each result shows a small table: speed, memory and the typical quality change for every precision, and whether that option meets your targets.</p>
+    <div class="mgrid">
+      <div class="mdef" id="m-acc"><h4>Quality change</h4>
+        <p>FP16 / BF16 is treated as lossless. FP8 and 8-bit are usually close to lossless. 4-bit language models lose a little (about 1% perplexity on a 7B model, more on small ones). Detectors lose about 1–7 mAP points in INT8 with simple post-training quantization; quantization-aware training recovers most of it. Robot policies are mostly unaffected, but precise tasks can degrade at 4-bit.</p>
+        <p class="good">Rule of thumb: start at FP16, move to FP8 / INT8 when you need speed or memory, and only go lower after testing on your own data.</p></div>
+    </div>
+  </div></details>
+
+  <details class="guide" id="g-stack"><summary>Stack planner</summary><div class="guide-body">
+    <p>Several models on one device compete for memory and compute. The planner adds up the memory (each model's weights and buffers, with the shared runtime counted once) and the load: every model's share of the device's capacity when it runs alone, summed. A combined load under 100% means the stack keeps up; under about 85% leaves room for peaks. With several GPUs, models are spread across them.</p>
+    <span class="formula">combined load = Σ (1 ÷ headroom of each model alone)   ·   stack headroom = 1 ÷ combined load</span>
+    <p>Sharing a device also adds waiting time between models, so a model with a tight latency target may need its own GPU.</p>
+  </div></details>
+
+  <details class="guide" id="g-report"><summary>Reports and the Hub signature</summary><div class="guide-body">
+    <p>Every result and every stack can be turned into a report: targets, results, accuracy trade-off, hardware options, deployment steps and assumptions. Share it as a link, print it to PDF, or download it as a single HTML file. The report carries the Computer Vision AI Hub signature block, a report ID and an integrity hash of the inputs; opening a shared link recomputes the hash and tells you if the link was changed. This detects edits and mistakes; it is not a certificate-based digital signature.</p>
+  </div></details>
+
+  <details class="guide" id="g-vla"><summary>VLA (robot-control models)</summary><div class="guide-body">
+    <p>A vision-language-action model looks at camera images plus an instruction and outputs robot actions. Robots need a steady stream of actions, so what matters is how quickly a new camera frame turns into motion, and how many actions per second the model can supply.</p>
+    <div class="mgrid">
+      <div class="mdef" id="m-vlareact"><h4>Reaction time <span class="unit">ms</span></h4>
+        <p>Time from a camera frame arriving to the first new action being ready. It is the delay in the control loop: the robot is always acting on slightly old information.</p>
+        <span class="formula">reaction = vision encoder + reading cameras and instruction + action generation + software overhead</span>
+        <p>Action generation is either autoregressive (one token per action dimension, e.g. OpenVLA) or a few flow / diffusion steps over a whole chunk (π0, SmolVLA, GR00T).</p>
+        <p class="good">Slow tabletop tasks: ≤ 200–300 ms. Dynamic manipulation: ≤ 100 ms. Whole-body humanoid control: ≤ 40 ms (usually with a faster low-level controller underneath).</p></div>
+      <div class="mdef" id="m-vlarate"><h4>Actions per second <span class="unit">Hz</span></h4>
+        <p>Many VLAs predict a chunk of future actions per inference. Running them back to back, the model can supply this many actions per second. It is an upper bound for open-loop execution; how fast the robot reacts to new images is still set by the reaction time.</p>
+        <span class="formula">actions per second = actions per chunk ÷ time per inference</span>
+        <p class="good">Common control rates: 10 Hz (arms, teleoperation datasets), 30–50 Hz (dexterous), 50–100 Hz (humanoid joints).</p></div>
+      <div class="mdef" id="m-vlachunk"><h4>Chunk and denoising steps</h4>
+        <p>Chunking predicts, say, 50 actions at once so the robot can keep moving while the next inference runs (asynchronous inference, real-time chunking). Flow / diffusion action heads repeat a small network several times; fewer steps are faster.</p>
+        <p class="good">Halving the denoising steps usually saves 10–40% of the time with little quality loss.</p></div>
+    </div>
+    <p style="margin-top:10px">VLA numbers are calibrated to published latencies (π0 about 73 ms on an RTX 4090, OpenVLA about 6 Hz on an RTX 4090, GR00T N1 about 64 ms on an L40) and are estimates; optimised engines can be 1.5–2× faster, newer models are best added through <code>data.json</code>.</p>
+  </div></details>
+
+
+  <details class="guide" id="g-hardware"><summary>Hardware specs</summary><div class="guide-body">
+    <p>Values come from the data tables at the top of the page source and can be edited there.</p>
+    <div class="mgrid">
+      <div class="mdef" id="m-tflops"><h4>TFLOPS · effective TFLOPS</h4>
+        <p><b>TFLOPS</b> is the vendor's peak dense tensor throughput (FP16 or FP8). Real models never reach it. <b>Effective TFLOPS</b> is what a model actually gets: for vision CNNs about 30% of peak on GPUs, calibrated so that the T4 matches Ultralytics' published YOLO26 latencies. Small models get less, because fixed per-inference work dominates.</p></div>
+      <div class="mdef" id="m-bw"><h4>Memory bandwidth <span class="unit">GB/s</span></h4>
+        <p>How fast data moves from memory to the chip. It decides LLM generation speed. Datacenter HBM GPUs reach 2–8 TB/s versus ~0.3–1.8 TB/s for consumer cards; Jetson boards are 25–205 GB/s.</p></div>
+      <div class="mdef" id="m-power"><h4>Power <span class="unit">W</span></h4>
+        <p>Typical board power (TDP) — used for the max-power filter and electricity cost. Edge devices: 10–60 W; desktop GPUs: 165–575 W; datacenter GPUs: 70–1000 W.</p></div>
+    </div>
+  </div></details>
+
+  <details class="guide" id="g-costs"><summary>Costs</summary><div class="guide-body">
+    <div class="mgrid">
+      <div class="mdef" id="m-price"><h4>Price · cloud price</h4>
+        <p>Approximate USD street price per device, or approximate cloud rental per GPU-hour. Prices change often — check current listings.</p></div>
+      <div class="mdef" id="m-tco"><h4>Rent vs buy</h4>
+        <span class="formula">rent per month = $/hour × GPUs × hours per day × 30
+buy = price × GPUs × 1.25   (host machine)
+power per month = W × GPUs × 70% load × hours × 30 ÷ 1000 × $/kWh
+pays off after = buy ÷ (rent − power) months</span>
+        <p class="good">Steady daily use favors buying; occasional or bursty use favors renting.</p></div>
+    </div>
+  </div></details>
+
+  <details class="guide" id="g-accuracy"><summary>Accuracy &amp; sources</summary><div class="guide-body">
+    <p>ComputeFit is a <b>roofline-style estimate</b>: it combines published model sizes with device specs, then calibrates against published benchmarks. Expect real results within roughly ±20–30%. Drivers, runtime versions, camera decoding and your exact pipeline all move the numbers.</p>
+    <div class="mgrid">
+      <div class="mdef"><h4>What's calibrated</h4>
+        <p>YOLO26 detection latencies on a T4 with TensorRT (the model lands within ~0.3 ms of the published 1.7–11.8 ms), RT-DETR-l on T4, SAM 2.1 on A100, typical SDXL and FLUX speeds on RTX 4090 and H100, and LLM speeds from memory bandwidth.</p></div>
+      <div class="mdef"><h4>What's approximate</h4>
+        <p>FLOPs for YOLO26 seg/pose/OBB/cls variants (derived from the YOLO11 equivalents), edge-device speeds (estimated from typical public benchmarks), all VLM results (image-token counts depend on each model's tiling and the image's aspect ratio), and all prices. Validate on the real device before buying.</p></div>
+      <div class="mdef"><h4>Sources</h4>
+        <p><a href="https://docs.ultralytics.com/models/yolo26/">Ultralytics YOLO26 docs</a> — model sizes, FLOPs and latency.<br><a href="https://computer-vision-ai-hub.github.io/ComputerVisionAIHubLibrary.github.io/">Computer Vision AI Hub catalog</a> — custom models and their base architectures.<br><a href="https://huggingface.co/">Hugging Face Hub</a> — model configs for LLM import.<br>Vendor spec sheets — memory, bandwidth, TFLOPS and power.</p></div>
+    </div>
+  </div></details>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand"><svg class="brand-mark" viewBox="0 0 160 160" aria-hidden="true"><rect width="160" height="160" rx="36" fill="#185FA5"/><path d="M32 52V38q0-6 6-6h14M108 32h14q6 0 6 6v14M128 108v14q0 6-6 6h-14M52 128H38q-6 0-6-6v-14" fill="none" stroke="#E6F1FB" stroke-width="8" stroke-linecap="round"/><rect x="50" y="86" width="12" height="22" rx="3" fill="#9FE1CB"/><rect x="74" y="70" width="12" height="38" rx="3" fill="#5DCAA5"/><rect x="98" y="54" width="12" height="54" rx="3" fill="#E6F1FB"/></svg><span class="brand-name">Compute<span class="accent">Fit</span></span></div>
+    <p class="footer-legal">ComputeFit is part of the <a href="https://computer-vision-ai-hub.github.io/ComputerVisionAIHub.github.io/">Computer Vision AI Hub</a> family. It runs fully in your browser — nothing you enter leaves your machine. All results are estimates from public specifications and published benchmarks; validate with a benchmark on the real device before buying. Prices are approximate.</p>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="https://computer-vision-ai-hub.github.io/ComputerVisionAIHubLibrary.github.io/">Model catalog</a>
+      <a href="#metrics">Metrics explained</a>
+      <a href="https://github.com/computer-vision-ai-hub">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<div id="drawer-overlay" class="drawer-overlay" hidden>
+  <aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title"></aside>
+</div>
+
+<div id="fit-modal" class="modal-overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fit-title">
+    <div class="modal-head">
+      <div>
+        <h2 id="fit-title" class="modal-title">Check fit</h2>
+        <p class="modal-note" id="fit-note"></p>
+      </div>
+      <button id="fit-close" class="modal-close" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="try-layout">
+      <div class="try-stage" id="fit-out"></div>
+      <div class="try-side" id="fit-side"></div>
+    </div>
+  </div>
+</div>
+
+<div id="add-modal" class="modal-overlay" hidden>
+  <div class="modal small" role="dialog" aria-modal="true" aria-labelledby="add-title">
+    <div class="modal-head">
+      <div>
+        <h2 id="add-title" class="modal-title">Add a model from Hugging Face</h2>
+        <p class="modal-note">For any LLM or VLM that isn't listed yet. Reads the model's public <code>config.json</code>; the model is saved in this browser only.</p>
+      </div>
+      <button id="add-close" class="modal-close" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <form id="add-form" style="display:flex;flex-direction:column;gap:12px;margin-top:16px">
+      <div class="fld-grid">
+        <label class="fld wide">Model id (org/model)<input type="text" id="add-id" placeholder="Qwen/Qwen2.5-7B-Instruct"></label>
+        <label class="fld">Type<select id="add-type"><option value="llm">LLM (text)</option><option value="vlm">VLM (image + text)</option></select></label>
+        <label class="fld">Total parameters (B), optional<input type="number" id="add-params" step="0.01" min="0" placeholder="auto"></label>
+      </div>
+      <button type="submit" class="btn primary">Import</button>
+      <div id="add-status" class="try-status" aria-live="polite"></div>
+      <details class="guide" id="add-paste">
+        <summary>Gated model or no connection? Paste its config.json</summary>
+        <div class="guide-body">
+          <label class="fld">config.json<textarea id="add-cfg" placeholder='{"hidden_size": 4096, "num_hidden_layers": 32, ...}'></textarea></label>
+          <button type="button" class="btn secondary" id="add-paste-btn" style="margin-top:10px">Use this config</button>
+        </div>
+      </details>
+    </form>
+  </div>
+</div>
+
+<div id="dev-modal" class="modal-overlay" hidden>
+  <div class="modal small" role="dialog" aria-modal="true" aria-labelledby="dev-title">
+    <div class="modal-head">
+      <div>
+        <h2 id="dev-title" class="modal-title">Add your own device</h2>
+        <p class="modal-note">Any GPU that isn't listed. Copy the specs from the vendor page or the <a href="https://www.techpowerup.com/gpu-specs/" target="_blank" rel="noopener">TechPowerUp GPU database</a>. The device is saved in this browser only; use “Copy as data.json entry” to share it with everyone.</p>
+      </div>
+      <button id="dev-close" class="modal-close" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <form id="dev-form" style="display:flex;flex-direction:column;gap:12px;margin-top:16px">
+      <div class="fld-grid">
+        <label class="fld wide">Name<input type="text" id="dev-name" placeholder="RTX 4050 Laptop 6GB"></label>
+        <label class="fld wide">Architecture (sets FP16 speed from FP32)<select id="dev-arch"></select></label>
+        <label class="fld">Memory (GB)<input type="number" id="dev-mem" step="any" min="0" placeholder="6"></label>
+        <label class="fld">Memory bandwidth (GB/s)<input type="number" id="dev-bw" step="any" min="0" placeholder="192"></label>
+        <label class="fld">FP32 TFLOPS (spec sheet)<input type="number" id="dev-fp32" step="any" min="0" placeholder="10"></label>
+        <label class="fld">FP16 tensor TFLOPS, optional<input type="number" id="dev-fp16" step="any" min="0" placeholder="auto"></label>
+        <label class="fld">Price ($), optional<input type="number" id="dev-price" step="any" min="0" placeholder="0"></label>
+        <label class="fld">Power (W), optional<input type="number" id="dev-tdp" step="any" min="0" placeholder="115"></label>
+        <label class="fld chk wide"><input type="checkbox" id="dev-lap">Laptop GPU (kept out of upgrade suggestions)</label>
+      </div>
+      <div id="dev-preview" class="try-status" aria-live="polite"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="btn primary">Save device</button><button type="button" class="btn secondary" id="dev-copy">Copy as data.json entry</button></div>
+      <div id="dev-list"></div>
+    </form>
+  </div>
+</div>
+
+<div id="report-modal" class="modal-overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rp-title">
+    <div class="modal-head no-print">
+      <div>
+        <h2 id="rp-title" class="modal-title">Shareable report</h2>
+        <p class="modal-note">Signed with the Computer Vision AI Hub mark, a report ID and an integrity hash. Copy the link, print it to PDF, or download it as one HTML file.</p>
+      </div>
+      <button id="rp-close" class="modal-close" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="rp-tools no-print">
+      <label class="fld">Prepared for<input type="text" id="rp-client" placeholder="Client or team"></label>
+      <label class="fld">Project<input type="text" id="rp-project" placeholder="Project name"></label>
+      <div class="rp-btns"><button type="button" class="btn primary" id="rp-print">Print / save as PDF</button><button type="button" class="btn secondary" id="rp-link">Copy share link</button><button type="button" class="btn secondary" id="rp-dl">Download HTML</button></div>
+    </div>
+    <div id="rp-body" class="rp"></div>
+  </div>
+</div>
+<script src="assets/js/data.js?v=20261121"></script>
+<script src="assets/js/engine.js?v=20261121"></script>
+<script src="assets/js/app.js?v=20261121"></script>
+</body>
+</html>
