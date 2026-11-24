@@ -9,7 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/styles.css?v=20261121">
+<link rel="stylesheet" href="assets/css/styles.css?v=20261124">
+<link rel="stylesheet" href="assets/css/card-art.css?v=20261124">
 </head>
 <body>
 <div class="masthead">
@@ -19,12 +20,16 @@
         <svg class="brand-mark" viewBox="0 0 160 160" aria-hidden="true"><rect width="160" height="160" rx="36" fill="#185FA5"/><path d="M32 52V38q0-6 6-6h14M108 32h14q6 0 6 6v14M128 108v14q0 6-6 6h-14M52 128H38q-6 0-6-6v-14" fill="none" stroke="#E6F1FB" stroke-width="8" stroke-linecap="round"/><rect x="50" y="86" width="12" height="22" rx="3" fill="#9FE1CB"/><rect x="74" y="70" width="12" height="38" rx="3" fill="#5DCAA5"/><rect x="98" y="54" width="12" height="54" rx="3" fill="#E6F1FB"/></svg>
         <span class="brand-name">Compute<span class="accent">Fit</span></span>
       </a>
-      <nav class="nav-links" aria-label="Primary">
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-nav" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <nav class="nav-links" id="primary-nav" aria-label="Primary">
         <a href="#models">Models</a>
         <a href="#stack">Stack planner</a>
         <a href="#metrics">Metrics explained</a>
         <button type="button" id="nav-add">Add a model</button>
         <button type="button" id="nav-add-dev">Add a device</button>
+        <a class="nav-ext" href="https://computer-vision-ai-hub.github.io/ComputerVisionAIHubLibrary.github.io/">Model catalog ↗</a>
       </nav>
       <a class="ghost-btn" href="https://computer-vision-ai-hub.github.io/ComputerVisionAIHubLibrary.github.io/">Model catalog ↗</a>
     </div>
@@ -431,8 +436,8 @@ pays off after = buy ÷ (rent − power) months</span>
     <div id="rp-body" class="rp"></div>
   </div>
 </div>
-<script src="assets/js/data.js?v=20261121"></script>
-<script src="assets/js/engine.js?v=20261121"></script>
-<script src="assets/js/app.js?v=20261121"></script>
+<script src="assets/js/data.js?v=20261124"></script>
+<script src="assets/js/engine.js?v=20261124"></script>
+<script src="assets/js/app.js?v=20261124"></script>
 </body>
 </html>

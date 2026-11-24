@@ -122,7 +122,7 @@ function cardHTML(item){
     stats = `<p class="card-from">${f.from ? `Runs from <b>${esc(hwLabel(f.from.hw,f.from.n))}</b> (${priceOf(f.from)}).` : 'No device in the database meets the default targets — open it to relax them.'}</p>`;
   }
   const meta = item.meta.filter(Boolean).concat(r ? [fmtGB(mode.mem(r).need)+' memory'] : []);
-  return `<article class="model-card st-${f.st}">
+  return `<article class="model-card st-${f.st}" data-type="${item.type}">
     <span class="card-tab">${esc(item.family)} <b>${tabText(f)}</b></span>
     <div class="card-image">${visual}<span class="task-badge">${esc(item.task)}</span></div>
     <div class="card-body">
@@ -739,6 +739,41 @@ function rpDownload(){
 window.addEventListener('afterprint',()=>document.body.classList.remove('printing-report'));
 
 /* ============================== WIRING ============================== */
+/* ============================== CLICK HELPERS ============================== */
+// Where the current click started: a drag from inside a dialog that ends on the backdrop must not close it.
+let downT = null;
+document.addEventListener('pointerdown', e=>{ downT = e.target; }, true);
+const onBackdrop = (t, el) => t===el && downT===el;
+
+// "?" inside a dialog shows the explanation in place instead of closing the dialog.
+let popFor = null, popAt = 0;
+function hideMetricPop(){ const p = $('metric-pop'); if(p) p.remove(); popFor = null; }
+function showMetricPop(btn, id){
+  const src = document.getElementById(id);
+  if(!src || !src.classList.contains('mdef')){ gotoMetric(id); return; }
+  if(popFor===btn){ hideMetricPop(); return; }
+  hideMetricPop();
+  const p = document.createElement('div');
+  p.id = 'metric-pop'; p.className = 'metric-pop'; p.setAttribute('role','dialog'); p.setAttribute('aria-label', src.querySelector('h4') ? src.querySelector('h4').textContent : 'Metric');
+  p.innerHTML = `<button type="button" class="mp-close" aria-label="Close">✕</button>${src.innerHTML}<button type="button" class="mp-more" data-metric-full="${esc(id)}">Open in Metrics explained →</button>`;
+  p.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));
+  document.body.appendChild(p); popFor = btn; popAt = performance.now();
+  const r = btn.getBoundingClientRect(), pw = p.offsetWidth, ph = p.offsetHeight, m = 12;
+  let left = Math.min(Math.max(m, r.left + r.width/2 - pw/2), innerWidth - pw - m);
+  let top = r.bottom + 8; if(top + ph > innerHeight - m) top = Math.max(m, r.top - ph - 8);
+  p.style.left = left+'px'; p.style.top = top+'px';
+  p.querySelector('.mp-close').focus({preventScroll:true});
+}
+document.addEventListener('scroll', e=>{ if(popFor && performance.now()-popAt > 400 && !(e.target.closest && e.target.closest('#metric-pop'))) hideMetricPop(); }, true);
+
+// The page is scrolled to anchors below the sticky filter bar; keep that offset equal to its real height.
+function syncSticky(){
+  const tb = document.querySelector('.toolbar-band'); if(!tb) return;
+  const h = getComputedStyle(tb).position==='sticky' ? tb.offsetHeight : 0;
+  document.documentElement.style.setProperty('--sticky-h', h+'px');
+}
+function setMenu(open){ const n = $('primary-nav'), b = $('nav-toggle'); if(!n || !b) return; n.classList.toggle('open', open); b.setAttribute('aria-expanded', String(open)); }
+
 function init(){
   Object.assign(els, {rpModal:$('report-modal'), devModal:$('dev-modal'), grid:$('grid'), state:$('state'), count:$('count'), filters:$('type-filters'), hw:$('hw'), drawer:$('drawer'), drawerOverlay:$('drawer-overlay'), fitModal:$('fit-modal'), fitOut:$('fit-out'), fitSide:$('fit-side'), addModal:$('add-modal')});
   { const st = document.createElement('style'); st.textContent = RP_CSS; document.head.appendChild(st); }
@@ -752,16 +787,25 @@ function init(){
   document.addEventListener('click', e=>{
     const t = e.target, q = s => t.closest(s);
     let b;
+    if(popFor && !q('#metric-pop') && !(q('[data-metric]') === popFor)) hideMetricPop();
+    if(!q('#primary-nav') && !q('#nav-toggle')) setMenu(false);
+    if(q('#nav-toggle')){ setMenu(!$('primary-nav').classList.contains('open')); return; }
+    if(q('#primary-nav a, #primary-nav button')) setMenu(false);
+    if(q('#metric-pop')){
+      if(q('.mp-close')) hideMetricPop();
+      else if((b = q('[data-metric-full]'))){ const id = b.dataset.metricFull; hideMetricPop(); gotoMetric(id); }
+      return;
+    }
     if((b = q('[data-fit]'))){ e.preventDefault(); openFit(b.dataset.fit); }
     else if((b = q('[data-info]'))){ const it = ITEMS.find(i=>i.id===b.dataset.info); if(it) openDrawer(it); }
     else if((b = q('[data-pick-hw]'))){ SEL.hw = b.dataset.pickHw; SEL.n = 1; const id = els.drawer.querySelector('[data-fit]').dataset.fit; renderGrid(); openFit(id); }
     else if((b = q('[data-remove]'))){ CUSTOM = CUSTOM.filter(c=>slug(c.m.id)!==b.dataset.remove); saveCustom(); closeDrawer(); buildItems(); renderAll(); }
-    else if(q('[data-drawer-close]') || t===els.drawerOverlay) closeDrawer();
-    else if(q('#fit-close') || t===els.fitModal) closeFit();
-    else if(q('#add-close') || t===els.addModal){ els.addModal.hidden = true; document.body.classList.remove('modal-open'); }
+    else if(q('[data-drawer-close]') || onBackdrop(t, els.drawerOverlay)) closeDrawer();
+    else if(q('#fit-close') || onBackdrop(t, els.fitModal)){ hideMetricPop(); closeFit(); }
+    else if(q('#add-close') || onBackdrop(t, els.addModal)){ els.addModal.hidden = true; document.body.classList.remove('modal-open'); }
     else if(q('#make-report')){ openReport('single', CUR && CUR.id); }
     else if(q('#stk-report')){ openReport('stack'); }
-    else if(q('#rp-close') || t===els.rpModal){ closeReport(); }
+    else if(q('#rp-close') || onBackdrop(t, els.rpModal)){ closeReport(); }
     else if(q('#rp-print')){ rpPrint(); }
     else if((b = q('#rp-link'))){ copyText(b, RP.link, 'copied ✓'); }
     else if(q('#rp-dl')){ rpDownload(); }
@@ -770,11 +814,11 @@ function init(){
     else if((b = q('[data-stk-preset]'))){ const pr = STK_PRESETS[+b.dataset.stkPreset]; STACK.rows = pr[1].filter(([id])=>ITEMS.some(i=>i.id===id)).map(([id,ov])=>({id,ov:{...ov}})); renderStackRows(); renderStackOut(); }
     else if((b = q('[data-stk-use]'))){ STACK.hw = b.dataset.stkUse; STACK.n = +b.dataset.stkN; $('stk-hw').innerHTML = hwSelectHTML(null,null,STACK.hw); stkNSelect(); renderStackOut(); $('stack').scrollIntoView({block:'start'}); }
     else if(q('#nav-add-dev') || q('[data-add-dev]')){ openDev(); }
-    else if(q('#dev-close') || t===els.devModal){ closeDev(); }
+    else if(q('#dev-close') || onBackdrop(t, els.devModal)){ closeDev(); }
     else if((b = q('[data-rm-dev]'))){ DEVS = DEVS.filter(d=>d.id!==b.dataset.rmDev); saveDevs(); if(SEL.hw===b.dataset.rmDev) SEL.hw = 'none'; applyDevs(); renderDevList(); renderAll(); if(!els.fitModal.hidden){ renderSide(); renderFit(); } }
     else if(q('#dev-copy')){ const d = devFromForm(true); if(d) copyText(q('#dev-copy'), JSON.stringify({hardware:[d]}, null, 2), 'copied ✓'); }
     else if(q('#nav-add')){ els.addModal.hidden = false; document.body.classList.add('modal-open'); addStatus(''); $('add-id').focus(); }
-    else if((b = q('[data-metric]'))) gotoMetric(b.dataset.metric);
+    else if((b = q('[data-metric]'))){ if(b.closest('.modal-overlay, .drawer-overlay')) showMetricPop(b, b.dataset.metric); else gotoMetric(b.dataset.metric); }
     else if((b = q('[data-copy]'))) copyText(b, b.parentElement.querySelector('code').textContent, 'copied ✓');
     else if((b = q('#copy-summary'))) copyText(b, lastText, 'Copied ✓');
     else if((b = q('[data-use-hw]'))){ SEL.hw = b.dataset.useHw; SEL.n = +b.dataset.useN; renderSide(); renderFit(); els.fitModal.querySelector('.modal').scrollTop = 0; }
@@ -801,6 +845,8 @@ function init(){
   $('stk-n').addEventListener('change', e=>{ STACK.n = +e.target.value; renderStackOut(); });
   $('report-modal').addEventListener('input', e=>{ if(e.target.id==='rp-client' || e.target.id==='rp-project'){ RP.verified = null; renderReport(); } });
   document.addEventListener('keydown', e=>{
+    if(e.key==='Escape' && popFor){ const b = popFor; hideMetricPop(); b.focus(); return; }
+    if(e.key==='Escape' && $('primary-nav').classList.contains('open')){ setMenu(false); $('nav-toggle').focus(); return; }
     if(e.key==='Escape'){ if(!els.rpModal.hidden) closeReport(); else if(!els.devModal.hidden) closeDev(); else if(!els.addModal.hidden){ els.addModal.hidden = true; document.body.classList.remove('modal-open'); } else if(!els.fitModal.hidden) closeFit(); else closeDrawer(); }
     else if(e.key==='/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); $('search').focus(); }
   });
@@ -808,6 +854,8 @@ function init(){
   if(h.startsWith('fit-')) openFit(h.slice(4)); else if(h && document.getElementById(h) && h!=='top' && h!=='models') gotoMetric(h);
   const rm = (location.hash||'').match(/^#report=([A-Za-z0-9_-]+)\.([0-9a-f]+)$/);
   if(rm){ try{ const st = b64d(rm[1]); applyState(st); renderAll(); sha(rm[1]).then(hh=>{ RP.verified = hh.slice(0,12)===rm[2]; openReport(st.k==='t'?'stack':'single', st.i); }); }catch(e){} }
+  syncSticky(); addEventListener('resize', syncSticky);
+  if(window.ResizeObserver) new ResizeObserver(syncSticky).observe(document.querySelector('.toolbar-band'));
   loadHub(); loadData(); loadTrending();
 }
 init();
